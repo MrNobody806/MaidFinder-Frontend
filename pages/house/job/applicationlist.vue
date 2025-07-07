@@ -1,0 +1,668 @@
+<template>
+  <section
+    class="mt-2 mx-auto max-w-7xl dark:bg-gray-900 min-h-screen dark:text-gray-100"
+  >
+    <!-- Filters Section -->
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold">Application Management</h2>
+        <div class="flex space-x-2">
+          <button
+            @click="toggleViewMode"
+            class="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
+            :disabled="loading"
+          >
+            <Icon
+              :name="viewMode === 'list' ? 'mdi:view-grid' : 'mdi:view-list'"
+              class="h-5 w-5 mr-1 text-black dark:text-white"
+            />
+            {{ viewMode === "list" ? "Card View" : "List View" }}
+          </button>
+          <button
+            @click="printJobList"
+            class="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
+            :disabled="loading"
+          >
+            <Icon
+              name="mdi:printer"
+              class="h-5 w-5 mr-1 text-black dark:text-white"
+            />
+            Print List
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex flex-col md:flex-row md:space-y-0 md:space-x-4 space-y-4"
+      >
+        <!-- Search Filter -->
+        <div class="flex-1">
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Search</label
+          >
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search by job title or location"
+            class="mt-1 p-2 border rounded-lg w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+            :disabled="loading"
+            @input="handleSearchInput"
+          />
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="flex-1">
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Posted Date (Range)</label
+          >
+          <div class="flex space-x-2">
+            <input
+              type="date"
+              v-model="startDate"
+              class="mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 w-full"
+              :disabled="loading"
+            />
+            <input
+              type="date"
+              v-model="endDate"
+              class="mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 w-full"
+              :disabled="loading"
+            />
+          </div>
+        </div>
+
+        <!-- Job Type Filter -->
+        <div class="flex-1">
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Job Type</label
+          >
+          <select
+            v-model="jobTypeFilter"
+            class="mt-1 p-2 border rounded-lg w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+            :disabled="loading"
+          >
+            <option value="">All</option>
+            <option value="full time">Full Time</option>
+            <option value="part time">Part Time</option>
+            <option value="one time">One Time</option>
+          </select>
+        </div>
+
+        <!-- Clear Filters Button -->
+        <div class="flex items-end">
+          <button
+            @click="clearFilters"
+            class="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 w-full md:w-auto"
+            :disabled="loading"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-8">
+      <div
+        class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"
+      ></div>
+      <p class="text-gray-500 dark:text-gray-400">Loading job listings...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="text-center py-8">
+      <Icon
+        name="mdi:alert-circle"
+        class="h-12 w-12 text-red-500 mx-auto mb-2"
+      />
+      <p class="text-red-500 dark:text-red-400 mb-2">
+        Failed to load job listings
+      </p>
+      <button
+        @click="fetchJobs"
+        class="p-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 dark:bg-blue-700 dark:text-blue-100 dark:hover:bg-blue-600"
+      >
+        Retry
+      </button>
+    </div>
+
+    <!-- Card View -->
+    <div
+      v-else-if="viewMode === 'card'"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
+      <div
+        v-for="job in jobs.data"
+        :key="job.id"
+        class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border-l-4 border-green-500"
+      >
+        <div class="p-4 h-full flex flex-col">
+          <div class="flex justify-between items-start">
+            <h3 class="text-lg font-semibold">{{ job.job_title }}</h3>
+            <span
+              class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs dark:bg-green-700 dark:text-green-100"
+            >
+              Open
+            </span>
+          </div>
+
+          <div class="mt-2 grid grid-cols-2 gap-2">
+            <div class="flex items-center">
+              <Icon
+                name="mdi:clock"
+                class="text-gray-500 dark:text-gray-400 mr-1"
+              />
+              <span class="text-sm text-gray-600 dark:text-gray-300">
+                {{ formatJobTime(job.job_time) }}
+              </span>
+            </div>
+            <div class="flex items-center">
+              <Icon
+                name="mdi:calendar"
+                class="text-gray-500 dark:text-gray-400 mr-1"
+              />
+              <span class="text-sm text-gray-600 dark:text-gray-300">
+                {{ formatDate(job.created_at) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-3 flex-grow">
+            <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
+              {{ job.job_description || "No description provided" }}
+            </p>
+          </div>
+
+          <div v-if="job.required_skills" class="mt-3 flex flex-wrap gap-2">
+            <span
+              v-for="(skill, index) in job.required_skills.split(',')"
+              :key="index"
+              class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full"
+            >
+              {{ skill.trim() }}
+            </span>
+          </div>
+
+          <div class="mt-4 grid grid-cols-4 gap-2">
+            <div class="flex flex-col items-center">
+              <span class="text-sm font-medium">Maids Needed</span>
+              <span class="text-lg">{{ job.num_of_maids }}</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-sm font-medium">Applicants</span>
+              <span class="text-lg">{{ job.applications_count }}</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-sm font-medium">Selected</span>
+              <span class="text-lg">{{ job.selected_maids_count }}</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-sm font-medium">Accepted</span>
+              <span class="text-lg">{{ job.accepted_offers_count }}</span>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <NuxtLink
+              :to="`/jobs/${job.id}`"
+              class="w-full text-center px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 dark:bg-blue-700 dark:text-blue-100 dark:hover:bg-blue-600 text-sm"
+            >
+              View Details
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div
+      v-else
+      class="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow mb-6 overflow-x-auto"
+    >
+      <table class="w-full min-w-[1000px]" id="jobListTable">
+        <thead>
+          <tr class="border-b dark:border-gray-700">
+            <th
+              class="text-left p-2 cursor-pointer"
+              @click="sortBy('job_title')"
+            >
+              <div class="flex items-center">
+                Job Title
+                <Icon
+                  v-if="sortColumn === 'job_title'"
+                  :name="
+                    sortDirection === 'asc'
+                      ? 'mdi:chevron-up'
+                      : 'mdi:chevron-down'
+                  "
+                  class="ml-1"
+                />
+              </div>
+            </th>
+            <th class="text-left p-2">Job Type</th>
+            <th
+              class="text-left p-2 cursor-pointer"
+              @click="sortBy('created_at')"
+            >
+              <div class="flex items-center">
+                Posted
+                <Icon
+                  v-if="sortColumn === 'created_at'"
+                  :name="
+                    sortDirection === 'asc'
+                      ? 'mdi:chevron-up'
+                      : 'mdi:chevron-down'
+                  "
+                  class="ml-1"
+                />
+              </div>
+            </th>
+            <th class="text-left p-2">Maids Needed</th>
+            <th class="text-left p-2">Applicants</th>
+            <th class="text-left p-2">Selected</th>
+            <th class="text-left p-2">Accepted</th>
+            <th class="text-left p-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="job in jobs.data"
+            :key="job.id"
+            class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <td class="p-2 font-medium">{{ job.job_title }}</td>
+            <td class="p-2">{{ formatJobTime(job.job_time) }}</td>
+            <td class="p-2">{{ formatDate(job.created_at) }}</td>
+            <td class="p-2 text-center">{{ job.num_of_maids }}</td>
+            <td class="p-2 text-center">{{ job.applications_count }}</td>
+            <td class="p-2 text-center">{{ job.selected_maids_count }}</td>
+            <td class="p-2 text-center">{{ job.accepted_offers_count }}</td>
+            <td class="p-2 space-x-2 whitespace-nowrap">
+              <NuxtLink
+                @click="viewDetail(job.id)"
+                class="p-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 dark:bg-blue-700 dark:text-blue-100 dark:hover:bg-blue-600 inline-block cursor-pointer text-sm"
+              >
+                View
+              </NuxtLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div v-if="jobs.data.length === 0" class="text-center py-8">
+        <p class="text-gray-500 dark:text-gray-400">
+          No job listings found matching your criteria
+        </p>
+      </div>
+
+      <!-- Pagination -->
+      <div
+        v-if="jobs.data.length > 0"
+        class="flex flex-col md:flex-row items-center justify-between mt-4"
+      >
+        <div class="mb-2 md:mb-0">
+          <span class="text-sm text-gray-700 dark:text-gray-300">
+            Showing {{ jobs.from }} to {{ jobs.to }} of {{ jobs.total }} entries
+          </span>
+        </div>
+        <div class="flex space-x-1">
+          <button
+            @click="prevPage"
+            :disabled="pagination.current_page === 1"
+            class="px-3 py-1 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            v-for="page in paginationButtons"
+            :key="page"
+            @click="goToPage(page)"
+            :disabled="page === pagination.current_page"
+            :class="[
+              'px-3 py-1 border rounded-lg',
+              page === pagination.current_page
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700',
+            ]"
+          >
+            {{ page }}
+          </button>
+          <button
+            @click="nextPage"
+            :disabled="pagination.current_page === pagination.total_pages"
+            class="px-3 py-1 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+        <div class="mt-2 md:mt-0">
+          <select
+            v-model="perPage"
+            class="p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+            @change="fetchJobs(1)"
+          >
+            <option value="5">5 per page</option>
+            <option value="10">10 per page</option>
+            <option value="20">20 per page</option>
+            <option value="50">50 per page</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted } from "vue";
+import { debounce } from "lodash";
+import backendApi from "@/networkServices/api/backendApi.js";
+import { useAuthStore } from "@/stores/auth";
+const router = useRouter();
+
+// State
+const loading = ref(true);
+const error = ref(null);
+const jobs = ref({
+  data: [],
+  from: 0,
+  to: 0,
+  total: 0,
+});
+const pagination = ref({
+  current_page: 1,
+  total_pages: 1,
+  total_jobs: 0,
+});
+
+const authStore = useAuthStore();
+const viewMode = ref("list"); // 'list' or 'card'
+
+// Filters
+const startDate = ref("");
+const endDate = ref("");
+const jobTypeFilter = ref("");
+const searchQuery = ref("");
+const perPage = ref(10);
+
+// Sorting
+const sortColumn = ref("created_at");
+const sortDirection = ref("desc");
+
+// Toggle view mode
+const toggleViewMode = () => {
+  viewMode.value = viewMode.value === "list" ? "card" : "list";
+};
+
+// Debounced search function
+const debouncedSearch = debounce(() => {
+  fetchJobs(1);
+}, 500);
+
+// Handle search input with debounce
+const handleSearchInput = () => {
+  debouncedSearch();
+};
+
+// Fetch jobs from API
+const fetchJobs = async (page = 1) => {
+  try {
+    loading.value = true;
+    error.value = null;
+    if (!authStore._hydrated) {
+      await authStore.hydrate();
+    }
+
+    const params = {
+      page,
+      per_page: perPage.value,
+    };
+
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim();
+    }
+    if (jobTypeFilter.value) {
+      params.job_time = jobTypeFilter.value;
+    }
+    if (startDate.value) {
+      params.start_date = startDate.value;
+    }
+    if (endDate.value) {
+      params.end_date = endDate.value;
+    }
+    if (sortColumn.value) {
+      params.sort_by = sortColumn.value;
+      params.sort_direction = sortDirection.value;
+    }
+
+    const response = await backendApi.get("/household/open", {
+      params,
+      headers: {
+        Authorization: `Bearer ${authStore.accessToken}`,
+      },
+    });
+
+    jobs.value = {
+      data: response.data.jobs || [],
+      from: (page - 1) * perPage.value + 1,
+      to: Math.min(page * perPage.value, response.data.pagination.total_jobs),
+      total: response.data.pagination.total_jobs,
+    };
+
+    pagination.value = {
+      current_page: response.data.pagination.current_page,
+      total_pages: response.data.pagination.total_pages,
+      total_jobs: response.data.pagination.total_jobs,
+    };
+  } catch (err) {
+    console.error("Error fetching jobs:", err);
+    error.value = "Failed to load job listings. Please try again later.";
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Helper functions
+const getHouseholdName = (household) => {
+  if (!household) return "Unknown";
+  return `${household.first_name} ${
+    household.middle_name ? household.middle_name + " " : ""
+  }${household.last_name}`;
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+  const options = { year: "numeric", month: "short", day: "numeric" };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+const formatJobTime = (jobTime) => {
+  if (!jobTime) return "N/A";
+  return jobTime
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const formatSalary = (job) => {
+  if (!job.salary_min && !job.salary_max) return "Negotiable";
+  if (job.salary_min && job.salary_max) {
+    return `${job.salary_min} - ${job.salary_max}`;
+  }
+  return job.salary_min || job.salary_max;
+};
+
+// Navigation methods
+const prevPage = () => {
+  if (pagination.value.current_page > 1) {
+    fetchJobs(pagination.value.current_page - 1);
+  }
+};
+
+const nextPage = () => {
+  if (pagination.value.current_page < pagination.value.total_pages) {
+    fetchJobs(pagination.value.current_page + 1);
+  }
+};
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= pagination.value.total_pages) {
+    fetchJobs(page);
+  }
+};
+
+// Pagination buttons
+const paginationButtons = computed(() => {
+  const buttons = [];
+  const current = pagination.value.current_page;
+  const total = pagination.value.total_pages;
+
+  // Always show first page
+  buttons.push(1);
+
+  // Show pages around current page
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  if (start > 2) buttons.push("...");
+
+  for (let i = start; i <= end; i++) {
+    buttons.push(i);
+  }
+
+  if (end < total - 1) buttons.push("...");
+
+  // Always show last page if different from first
+  if (total > 1) buttons.push(total);
+
+  return buttons;
+});
+
+const viewDetail = (jobId) => {
+  router.push(`/house/job/view-${jobId}`);
+};
+
+// Clear Filters
+const clearFilters = () => {
+  startDate.value = "";
+  endDate.value = "";
+  jobTypeFilter.value = "";
+  searchQuery.value = "";
+  fetchJobs(1);
+};
+
+// Print Job List
+const printJobList = () => {
+  const printWindow = window.open("", "", "width=800,height=600");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Job Listings Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #333; text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .print-date { text-align: right; margin-bottom: 20px; }
+          .print-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+          .print-filters { margin-bottom: 20px; font-size: 0.9em; }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <div>
+            <h1>Job Listings Report</h1>
+            <div class="print-date">Generated on: ${new Date().toLocaleString()}</div>
+          </div>
+        </div>
+
+        <div class="print-filters">
+          <strong>Filters Applied:</strong><br>
+          ${
+            jobTypeFilter.value
+              ? `Job Type: ${formatJobTime(jobTypeFilter.value)}<br>`
+              : ""
+          }
+          ${
+            startDate.value || endDate.value
+              ? `Date Range: ${startDate.value} to ${endDate.value}<br>`
+              : ""
+          }
+          ${searchQuery.value ? `Search: "${searchQuery.value}"` : ""}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Job Title</th>
+              <th>Employer</th>
+              <th>Location</th>
+              <th>Job Type</th>
+              <th>Posted</th>
+              <th>Applicants</th>
+              <th>Selected</th>
+              <th>Accepted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${jobs.value.data
+              .map(
+                (job) => `
+              <tr>
+                <td>${job.job_title}</td>
+                <td>${getHouseholdName(job.household)}</td>
+                <td>${job.location}</td>
+                <td>${formatJobTime(job.job_time)}</td>
+                <td>${formatDate(job.created_at)}</td>
+                <td>${job.applications_count}</td>
+                <td>${job.selected_maids_count}</td>
+                <td>${job.accepted_offers_count}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 500);
+};
+
+// Sort by column
+const sortBy = (column) => {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = "desc";
+  }
+  fetchJobs(pagination.value.current_page);
+};
+
+// Watchers for filters that should trigger API calls
+watch([jobTypeFilter, searchQuery, perPage, startDate, endDate], () => {
+  fetchJobs(1);
+});
+
+watch([sortColumn, sortDirection], () => {
+  fetchJobs(pagination.value.current_page);
+});
+
+// Initialize
+onMounted(() => {
+  fetchJobs();
+});
+
+definePageMeta({
+  layout: "house",
+});
+</script>

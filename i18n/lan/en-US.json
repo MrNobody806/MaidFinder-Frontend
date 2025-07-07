@@ -1,0 +1,93 @@
+{
+  "welcome": "Find Trusted Maids Near You",
+  "description": "Our organization helps you find trusted helpers or next job with ease.",
+  "get_started": "Get Started",
+  "search_placeholder": "Search among maids",
+  "search_button": "Search",
+  "latest_profiles": "Latest profiles",
+  "find_helper": "Find the perfect helper for your home today!",
+  "available_time": "Available for Full-time & Part-time",
+  "view_details": "View Details",
+  "hire_now": "Hire Now",
+  "see_all": "see all",
+  "how_it_works": "How it works",
+  "step_by_step": "Step by step Guide",
+  "service": "Services",
+  "services_description": "At our organization, we offer a range of services to help householders get the helper they need.",
+  "lets_make_things_happen": "Let's make things happen",
+  "cta_description": "Contact us today to learn more about how our maid-finding services can help you find the perfect helper for your home with ease and confidence.",
+  "teams": "Teams",
+  "teams_description": "Meet the skilled and experienced team dedicated to connecting you with the perfect maid for your home needs.",
+  "see_all_team": "See all team",
+  "contact_us": "Contact Us",
+  "contact_description": "Let's Get The Helper You Need",
+  "name_label": "Name",
+  "email_label": "Email*",
+  "message_label": "Message*",
+  "name_placeholder": "Enter your name",
+  "email_placeholder": "Enter your email",
+  "message_placeholder": "Enter your message",
+  "send_message": "Send Message",
+  "learn_more": "learn more",
+  "steps": [
+    {
+      "title": "01 Browse verified maids",
+      "description": "Browse Verified Maids with Confidence. Explore a curated selection of experienced and background-checked maids. Each profile includes detailed information, skills, and reviews to help you find the perfect match for your household needs. Hire with confidence, knowing you’re choosing from trusted professionals."
+    },
+    {
+      "title": "02 Check profiles & reviews",
+      "description": "Check profiles and reviews to ensure you are selecting the best maid for your needs."
+    },
+    {
+      "title": "03 Implementation",
+      "description": "Implement the chosen maid's services into your household routine."
+    },
+    {
+      "title": "04 Pay securely & get service",
+      "description": "Pay securely and start receiving the services from your chosen maid."
+    }
+  ],
+  "services": [
+    {
+      "title": "Maid Listing & Profiles",
+      "description": "Browse through a curated list of verified maids with detailed profiles."
+    },
+    {
+      "title": "Advanced Search & Filters",
+      "description": "Use advanced search and filters to find the perfect maid for your needs."
+    },
+    {
+      "title": "Background Check",
+      "description": "Ensure the safety and reliability of your chosen maid with thorough background checks."
+    },
+    {
+      "title": "Contract & Agreement Management",
+      "description": "Manage contracts and agreements seamlessly with our tools."
+    },
+    {
+      "title": "Customer Support & Assistance",
+      "description": "Get dedicated customer support and assistance whenever you need it."
+    },
+    {
+      "title": "Analytics and Tracking",
+      "description": "Track and analyze the performance of your household helpers."
+    }
+  ],
+  "team_members": [
+    {
+      "name": "Manuhe Wolde",
+      "role": "CEO and Co-Founder",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+    },
+    {
+      "name": "Kenaol Bekele",
+      "role": "Junior Front-end Dev",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+    },
+    {
+      "name": "Gutu Tamiru",
+      "role": "Junior Back-end Dev and Co-Founder",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+    }
+  ]
+}
